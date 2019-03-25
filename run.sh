@@ -75,41 +75,6 @@ while [ 1 ]
 do
     if [ $DEBUG ]; then echo DEBUG: Starting loop; fi
 
-    # Cleanup unused volumes
-
-    if [[ $(docker version --format '{{(index .Server.Version)}}' | grep -E '^[01]\.[012345678]\.') ]]; then
-      echo "=> Removing unused volumes using 'docker-cleanup-volumes.sh' script"
-      /docker-cleanup-volumes.sh
-    else
-      echo "=> Removing unused volumes using native 'docker volume' command"
-      for volume in $(docker volume ls -qf dangling=true); do
-        echo "Deleting ${volume}"
-        docker volume rm "${volume}"
-      done
-    fi
-
-    IFS='
- '
-
-    # Cleanup exited/dead containers
-    echo "=> Removing exited/dead containers"
-    EXITED_CONTAINERS_IDS="`docker ps -a -q -f status=exited -f status=dead | xargs echo`"
-    for CONTAINER_ID in $EXITED_CONTAINERS_IDS; do
-      CONTAINER_IMAGE=$(docker inspect --format='{{(index .Config.Image)}}' $CONTAINER_ID)
-      CONTAINER_NAME=$(docker inspect --format='{{(index .Name)}}' $CONTAINER_ID)
-      if [ $DEBUG ]; then echo "DEBUG: Check container image $CONTAINER_IMAGE named $CONTAINER_NAME"; fi
-      keepit=0
-      checkPatterns "${KEEP_CONTAINERS}" "${CONTAINER_IMAGE}" $keepit
-      keepit=$?
-      checkPatterns "${KEEP_CONTAINERS_NAMED}" "${CONTAINER_NAME}" $keepit
-      keepit=$?
-      if [[ $keepit -eq 0 ]]; then
-        echo "Removing stopped container $CONTAINER_ID"
-        docker rm -v $CONTAINER_ID
-      fi
-    done
-    unset CONTAINER_ID
-
     echo "=> Removing unused images"
 
     # Get all containers in "created" state
