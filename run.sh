@@ -137,15 +137,6 @@ do
     echo "=> Waiting ${DELAY_TIME} seconds before cleaning"
     sleep ${DELAY_TIME} & wait
 
-    # Remove created containers that haven't managed to start within the DELAY_TIME interval
-    rm -f CreatedContainerToClean
-    comm -12 CreatedContainerIdList <(docker ps -a -q -f status=created | sort) > CreatedContainerToClean
-    if [ -s CreatedContainerToClean ]; then
-        echo "=> Start to clean $(cat CreatedContainerToClean | wc -l) created/stuck containers"
-        if [ $DEBUG ]; then echo "DEBUG: Removing unstarted containers"; fi
-        docker rm -v $(cat CreatedContainerToClean)
-    fi
-
     # Remove images being used by containers from the delete list again. This prevents the images being pulled from deleting
     CONTAINER_ID_LIST=$(docker ps -aq --no-trunc)
     rm -f ContainerImageIdList
